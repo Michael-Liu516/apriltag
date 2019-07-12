@@ -1,0 +1,9 @@
+/home/cidi/Downloads/apriltag/CMakeFiles/install.dir
+/home/cidi/Downloads/apriltag/CMakeFiles/list_install_components.dir
+/home/cidi/Downloads/apriltag/CMakeFiles/rebuild_cache.dir
+/home/cidi/Downloads/apriltag/CMakeFiles/apriltag.dir
+/home/cidi/Downloads/apriltag/CMakeFiles/edit_cache.dir
+/home/cidi/Downloads/apriltag/CMakeFiles/opencv_demo.dir
+/home/cidi/Downloads/apriltag/CMakeFiles/apriltag_demo.dir
+/home/cidi/Downloads/apriltag/CMakeFiles/install/local.dir
+/home/cidi/Downloads/apriltag/CMakeFiles/install/strip.dir
