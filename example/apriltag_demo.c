@@ -44,7 +44,6 @@ either expressed or implied, of the Regents of The University of Michigan.
 #include "tagCircle21h7.h"
 #include "tagStandard41h12.h"
 
-
 #include "common/getopt.h"
 #include "common/image_u8.h"
 #include "common/image_u8x4.h"
@@ -70,7 +69,8 @@ int main(int argc, char *argv[])
     getopt_add_double(getopt, 'b', "blur", "0.0", "Apply low-pass blur to input; negative sharpens");
     getopt_add_bool(getopt, '0', "refine-edges", 1, "Spend more time trying to align edges of tags");
 
-    if (!getopt_parse(getopt, argc, argv, 1) || getopt_get_bool(getopt, "help")) {
+    if (!getopt_parse(getopt, argc, argv, 1) || getopt_get_bool(getopt, "help"))
+    {
         printf("Usage: %s [options] <input files>\n", argv[0]);
         getopt_do_usage(getopt);
         exit(0);
@@ -80,17 +80,28 @@ int main(int argc, char *argv[])
 
     apriltag_family_t *tf = NULL;
     const char *famname = getopt_get_string(getopt, "family");
-    if (!strcmp(famname, "tag36h11")) {
+    if (!strcmp(famname, "tag36h11"))
+    {
         tf = tag36h11_create();
-    } else if (!strcmp(famname, "tag25h9")) {
+    }
+    else if (!strcmp(famname, "tag25h9"))
+    {
         tf = tag25h9_create();
-    } else if (!strcmp(famname, "tag16h5")) {
+    }
+    else if (!strcmp(famname, "tag16h5"))
+    {
         tf = tag16h5_create();
-    } else if (!strcmp(famname, "tagCircle21h7")) {
+    }
+    else if (!strcmp(famname, "tagCircle21h7"))
+    {
         tf = tagCircle21h7_create();
-    } else if (!strcmp(famname, "tagStandard41h12")) {
+    }
+    else if (!strcmp(famname, "tagStandard41h12"))
+    {
         tf = tagStandard41h12_create();
-    } else {
+    }
+    else
+    {
         printf("Unrecognized tag family name. Use e.g. \"tag36h11\".\n");
         exit(-1);
     }
@@ -109,7 +120,8 @@ int main(int argc, char *argv[])
 
     const int hamm_hist_max = 10;
 
-    for (int iter = 0; iter < maxiters; iter++) {
+    for (int iter = 0; iter < maxiters; iter++)
+    {
 
         int total_quads = 0;
         int total_hamm_hist[hamm_hist_max];
@@ -119,7 +131,8 @@ int main(int argc, char *argv[])
         if (maxiters > 1)
             printf("iter %d / %d\n", iter + 1, maxiters);
 
-        for (int input = 0; input < zarray_size(inputs); input++) {
+        for (int input = 0; input < zarray_size(inputs); input++)
+        {
 
             int hamm_hist[hamm_hist_max];
             memset(hamm_hist, 0, sizeof(hamm_hist));
@@ -134,39 +147,48 @@ int main(int argc, char *argv[])
             image_u8_t *im = NULL;
             if (str_ends_with(path, "pnm") || str_ends_with(path, "PNM") ||
                 str_ends_with(path, "pgm") || str_ends_with(path, "PGM"))
+            {
                 im = image_u8_create_from_pnm(path);
-            else if (str_ends_with(path, "jpg") || str_ends_with(path, "JPG")) {
+            }
+            else if (str_ends_with(path, "jpg") || str_ends_with(path, "JPG"))
+            {
                 int err = 0;
                 pjpeg_t *pjpeg = pjpeg_create_from_file(path, 0, &err);
-                if (pjpeg == NULL) {
+                if (pjpeg == NULL)
+                {
                     printf("pjpeg error %d\n", err);
                     continue;
                 }
 
-                if (1) {
+                if (1)
+                {
                     im = pjpeg_to_u8_baseline(pjpeg);
-                } else {
+                }
+                else
+                {
                     printf("illumination invariant\n");
 
-                    image_u8x3_t *imc =  pjpeg_to_u8x3_baseline(pjpeg);
+                    image_u8x3_t *imc = pjpeg_to_u8x3_baseline(pjpeg);
 
                     im = image_u8_create(imc->width, imc->height);
 
-                    for (int y = 0; y < imc->height; y++) {
-                        for (int x = 0; x < imc->width; x++) {
-                            double r = imc->buf[y*imc->stride + 3*x + 0] / 255.0;
-                            double g = imc->buf[y*imc->stride + 3*x + 1] / 255.0;
-                            double b = imc->buf[y*imc->stride + 3*x + 2] / 255.0;
+                    for (int y = 0; y < imc->height; y++)
+                    {
+                        for (int x = 0; x < imc->width; x++)
+                        {
+                            double r = imc->buf[y * imc->stride + 3 * x + 0] / 255.0;
+                            double g = imc->buf[y * imc->stride + 3 * x + 1] / 255.0;
+                            double b = imc->buf[y * imc->stride + 3 * x + 2] / 255.0;
 
                             double alpha = 0.42;
-                            double v = 0.5 + log(g) - alpha*log(b) - (1-alpha)*log(r);
+                            double v = 0.5 + log(g) - alpha * log(b) - (1 - alpha) * log(r);
                             int iv = v * 255;
                             if (iv < 0)
                                 iv = 0;
                             if (iv > 255)
                                 iv = 255;
 
-                            im->buf[y*im->stride + x] = iv;
+                            im->buf[y * im->stride + x] = iv;
                         }
                     }
                     image_u8x3_destroy(imc);
@@ -177,14 +199,16 @@ int main(int argc, char *argv[])
                 pjpeg_destroy(pjpeg);
             }
 
-            if (im == NULL) {
+            if (im == NULL)
+            {
                 printf("couldn't load %s\n", path);
                 continue;
             }
 
             zarray_t *detections = apriltag_detector_detect(td, im);
 
-            for (int i = 0; i < zarray_size(detections); i++) {
+            for (int i = 0; i < zarray_size(detections); i++)
+            {
                 apriltag_detection_t *det;
                 zarray_get(detections, i, &det);
 
@@ -198,7 +222,8 @@ int main(int argc, char *argv[])
 
             apriltag_detections_destroy(detections);
 
-            if (!quiet) {
+            if (!quiet)
+            {
                 timeprofile_display(td->tp);
             }
 
@@ -210,7 +235,7 @@ int main(int argc, char *argv[])
             for (int i = 0; i < hamm_hist_max; i++)
                 printf("%5d ", hamm_hist[i]);
 
-            double t =  timeprofile_total_utime(td->tp) / 1.0E3;
+            double t = timeprofile_total_utime(td->tp) / 1.0E3;
             total_time += t;
             printf("%12.3f ", t);
             printf("%5d", td->nquads);
@@ -219,7 +244,6 @@ int main(int argc, char *argv[])
 
             image_u8_destroy(im);
         }
-
 
         printf("Summary\n");
 
@@ -230,23 +254,31 @@ int main(int argc, char *argv[])
         printf("%12.3f ", total_time);
         printf("%5d", total_quads);
         printf("\n");
-
     }
 
     // don't deallocate contents of inputs; those are the argv
     apriltag_detector_destroy(td);
 
-    if (!strcmp(famname, "tag36h11")) {
+    if (!strcmp(famname, "tag36h11"))
+    {
         tag36h11_destroy(tf);
-    } else if (!strcmp(famname, "tag25h9")) {
+    }
+    else if (!strcmp(famname, "tag25h9"))
+    {
         tag25h9_destroy(tf);
-    } else if (!strcmp(famname, "tag16h5")) {
+    }
+    else if (!strcmp(famname, "tag16h5"))
+    {
         tag16h5_destroy(tf);
-    } else if (!strcmp(famname, "tagCircle21h7")) {
+    }
+    else if (!strcmp(famname, "tagCircle21h7"))
+    {
         tagCircle21h7_destroy(tf);
-    }else if (!strcmp(famname, "tagStandard41h12")) {
+    }
+    else if (!strcmp(famname, "tagStandard41h12"))
+    {
         tagStandard41h12_destroy(tf);
-    } 
+    }
 
     getopt_destroy(getopt);
 
