@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 project(apriltag)
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 find_package(OpenCV QUIET)
 
 include_directories(.)
@@ -65,7 +65,8 @@ install(FILES "${PROJECT_BINARY_DIR}/apriltag.pc" DESTINATION "lib/pkgconfig/")
 # apriltag_demo
 add_executable(apriltag_demo example/apriltag_demo.c)
 target_link_libraries(apriltag_demo apriltag)
-
+find_package(Eigen3)
+INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIR})
 # opencv_demo
 if(OpenCV_FOUND)
     add_executable(opencv_demo example/opencv_demo.cc)

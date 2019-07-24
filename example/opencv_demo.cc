@@ -30,6 +30,7 @@ either expressed or implied, of the Regents of The University of Michigan.
 #include "opencv2/opencv.hpp"
 #include <chrono>
 #include <cmath>
+#include <Eigen/Dense>
 
 extern "C"
 {
@@ -47,6 +48,38 @@ using namespace std;
 using namespace cv;
 using std::chrono::high_resolution_clock;
 using std::chrono::milliseconds;
+
+template <typename _Tp>
+void print_matrix(const _Tp *data, const int rows, const int cols)
+{
+    for (int y = 0; y < rows; ++y)
+    {
+        for (int x = 0; x < cols; ++x)
+        {
+            fprintf(stderr, "  %f  ", static_cast<float>(data[y * cols + x]));
+        }
+        fprintf(stderr, "\n");
+    }
+    fprintf(stderr, "\n");
+}
+
+void test_inverse_matrix(std::vector<float> input_matrix)
+{
+    //std::vector<float> vec{ 5, -2, 2, 7, 1, 0, 0, 3, -3, 1, 5, 0, 3, -1, -9, 4 };
+    const int N{3};
+    if (input_matrix.size() != (int)pow(N, 2))
+    {
+        fprintf(stderr, "input_matrix must be N^2\n");
+        return;
+    }
+
+    Eigen::Map<Eigen::MatrixXf> map(input_matrix.data(), 3, 3);
+    Eigen::MatrixXf inv = map.inverse();
+    fprintf(stderr, "source matrix:\n");
+    print_matrix<float>(input_matrix.data(), N, N);
+    fprintf(stderr, "eigen inverse matrix:\n");
+    print_matrix<float>(inv.data(), N, N);
+}
 
 int main(int argc, char *argv[])
 {
@@ -110,11 +143,11 @@ int main(int argc, char *argv[])
     td->refine_edges = getopt_get_bool(getopt, "refine-edges");
     Mat frame, gray;
     apriltag_detection_info_t info;
-    info.tagsize = 0.2;
-    info.fx = 1890.9127;
-    info.fy = 1885.8236;
-    info.cx = 578.2129;
-    info.cy = 289.7581;
+    info.tagsize = 0.135;         // tag_size in meter
+    info.fx = 1952.992318829338;  // fx
+    info.fy = 1951.357135681735;  // fy
+    info.cx = 539.6076735381756;  // cx
+    info.cy = 276.4885069533516;  // cy
     while (true)
     {
         high_resolution_clock::time_point beginTime = high_resolution_clock::now();
@@ -135,13 +168,32 @@ int main(int argc, char *argv[])
             info.det = det;
             apriltag_pose_t pose;
             double err = estimate_tag_pose(&info, &pose);
-            cout << "T is " << pose.t->data[0] << "  " << pose.t->data[1] << " " << pose.t->data[2] << endl;
-            cout << "R is " << pose.R->data[0] << "  " << pose.R->data[1] << " " << pose.R->data[2] << endl;
-            cout << pose.R->data[3] << " " << pose.R->data[4] << " " << pose.R->data[5] << endl;
-            cout << pose.R->data[6] << " " << pose.R->data[7] << " " << pose.R->data[8] << endl;
-            auto theta_x = atan2(pose.R->data[7], pose.R->data[8]);
-            auto theta_y = atan2(-pose.R->data[6], std::sqrt(std::pow(pose.R->data[7], 2) + std::pow(pose.R->data[8], 2)));
-            auto theta_z = atan2(pose.R->data[3], pose.R->data[0]);
+            cout << "T is " << pose.t->data[0] << "  " << pose.t->data[1] << "  " << pose.t->data[2] << endl;
+            cout << "R is " << pose.R->data[0] << "  " << pose.R->data[1] << "  " << pose.R->data[2] << endl;
+            cout << pose.R->data[3] << " " << pose.R->data[4] << "  " << pose.R->data[5] << endl;
+            cout << pose.R->data[6] << " " << pose.R->data[7] << "  " << pose.R->data[8] << endl;
+            auto theta_x = atan2(pose.R->data[7], pose.R->data[8]) /3.1415926 * 180;
+            auto theta_y = atan2(-pose.R->data[6], std::sqrt(std::pow(pose.R->data[7], 2) + std::pow(pose.R->data[8], 2)))/3.1415926 * 180;
+            auto theta_z = atan2(pose.R->data[3], pose.R->data[0])/3.1415926 * 180;
+            Eigen::MatrixXd matrix(3, 3);
+            matrix(0,0) = pose.R->data[0];
+            matrix(0,1) = pose.R->data[3];
+            matrix(0,2) = pose.R->data[6];
+            matrix(1,0) = pose.R->data[1];
+            matrix(1,1) = pose.R->data[4];
+            matrix(1,2) = pose.R->data[7];
+            matrix(2,0) = pose.R->data[2];
+            matrix(2,1) = pose.R->data[5];
+            matrix(2,2) = pose.R->data[8];
+
+            Eigen::VectorXd vector(3);
+            vector[0] = -pose.t->data[0];
+            vector[1] = -pose.t->data[1];
+            vector[2] = -pose.t->data[2];
+            Eigen::VectorXd result = matrix * vector;
+            cout << "result is " << result[0] << "  " << result[1] << "  " << result[2] << endl;
+            //test_inverse_matrix(input_matrix);
+
             std::cout << "theta_x is " << theta_x << "\ttheta_y is " << theta_y << "\ttheta_z is " << theta_z << std::endl;
             line(frame, Point(det->p[0][0], det->p[0][1]),
                  Point(det->p[1][0], det->p[1][1]),
